@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Spin the Wheel - Random Decision Picker</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Canvas Confetti library for celebrations -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <!-- Google Fonts: Inter & Outfit -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            display: ['Outfit', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50: '#eef2ff',
+              100: '#e0e7ff',
+              500: '#6366f1',
+              600: '#4f46e5',
+              700: '#4338ca',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* Custom Scrollbars */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(30, 41, 59, 0.5);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #475569;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #64748b;
+    }
+
+    /* Wheel Pointer Glow */
+    .pointer-shadow {
+      filter: drop-shadow(0px 4px 8px rgba(0, 0, 0, 0.45));
+    }
+
+    /* Pulse animation for CTA */
+    @keyframes subtlePulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.03); }
+    }
+    .animate-subtle {
+      animation: subtlePulse 2.8s infinite ease-in-out;
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 font-sans min-h-screen flex flex-col antialiased selection:bg-indigo-500 selection:text-white">
+
+  <!-- Header Bar -->
+  <header class="border-b border-slate-800/80 bg-slate-900/60 backdrop-blur-md sticky top-0 z-30 px-4 lg:px-8 py-3.5">
+    <div class="max-w-7xl mx-auto flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-pink-500 flex items-center justify-center text-xl shadow-lg shadow-indigo-500/25">
+          🎡
+        </div>
+        <div>
+          <h1 class="text-xl font-display font-extrabold tracking-tight bg-gradient-to-r from-white via-indigo-200 to-indigo-400 bg-clip-text text-transparent">
+            Spin The Wheel
+          </h1>
+          <p class="text-xs text-slate-400 font-medium hidden sm:block">Random decision picker & prize spinner</p>
+        </div>
+      </div>
+
+      <!-- Quick Action Controls -->
+      <div class="flex items-center gap-2">
+        <button id="soundToggleBtn" aria-label="Toggle Sound" class="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-lg bg-slate-800 hover:bg-slate-700 active:scale-95 transition border border-slate-700 text-slate-300 hover:text-white">
+          <span id="soundIcon">🔊</span>
+          <span id="soundLabel" class="hidden sm:inline">Sound ON</span>
+        </button>
+
+        <a href="https://github.com" target="_blank" rel="noopener noreferrer" class="px-3 py-2 text-xs font-semibold rounded-lg bg-slate-800 hover:bg-slate-700 active:scale-95 transition border border-slate-700 text-slate-300 hover:text-white flex items-center gap-1.5">
+          <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24">
+            <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
+          </svg>
+          <span class="hidden sm:inline">GitHub</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 lg:p-8 flex flex-col lg:flex-row gap-6 lg:gap-8 items-start justify-center">
+
+    <!-- Left Column: Wheel Presentation -->
+    <section class="flex-1 w-full flex flex-col items-center justify-center bg-slate-900/40 border border-slate-800/80 rounded-2xl p-4 sm:p-6 lg:p-8 relative shadow-2xl overflow-hidden backdrop-blur-sm">
+      <!-- Glow effect backdrop -->
+      <div class="absolute -top-24 -left-24 w-72 h-72 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"></div>
+      <div class="absolute -bottom-24 -right-24 w-72 h-72 bg-pink-500/10 rounded-full blur-3xl pointer-events-none"></div>
+
+      <!-- Wheel & Pointer Frame -->
+      <div class="relative w-full max-w-[460px] aspect-square flex items-center justify-center my-2">
+        <!-- Top Pointer -->
+        <div class="absolute -top-3 left-1/2 -translate-x-1/2 z-20 pointer-shadow">
+          <svg class="w-10 h-10 filter drop-shadow(0 2px 4px rgba(0,0,0,0.8))" viewBox="0 0 24 24" fill="none">
+            <path d="M12 22L4 6C3.5 5 4.5 3 6 3H18C19.5 3 20.5 5 20 6L12 22Z" fill="#F43F5E" stroke="#FFF" stroke-width="2" stroke-linejoin="round"/>
+          </svg>
+        </div>
+
+        <!-- Canvas -->
+        <canvas id="wheelCanvas" class="w-full h-full cursor-pointer select-none rounded-full transition-transform active:scale-[0.99] touch-manipulation drop-shadow-2xl" width="900" height="900"></canvas>
+      </div>
+
+      <!-- Spin Button CTA -->
+      <div class="mt-6 w-full max-w-sm flex flex-col gap-2">
+        <button id="spinBtn" class="w-full py-4 px-8 rounded-xl font-display font-extrabold text-xl tracking-wider uppercase text-white bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 hover:from-indigo-600 hover:via-purple-600 hover:to-pink-600 active:scale-95 shadow-lg shadow-indigo-500/30 transition transform flex items-center justify-center gap-3 animate-subtle disabled:opacity-50 disabled:pointer-events-none">
+          <span>SPIN THE WHEEL</span>
+          <svg class="w-6 h-6 animate-spin-slow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+          </svg>
+        </button>
+
+        <p class="text-xs text-center text-slate-400">
+          Tip: You can also tap directly anywhere on the wheel to spin!
+        </p>
+      </div>
+    </section>
+
+    <!-- Right Column: Settings, Entries & Presets -->
+    <aside class="w-full lg:w-[420px] flex flex-col gap-5 bg-slate-900/40 border border-slate-800/80 rounded-2xl p-5 sm:p-6 backdrop-blur-sm shadow-xl">
+      <!-- Section Title & Presets -->
+      <div>
+        <div class="flex items-center justify-between mb-3">
+          <h2 class="text-lg font-display font-bold text-white flex items-center gap-2">
+            <span>⚙️ Configuration</span>
+          </h2>
+          <span id="entriesCountBadge" class="text-xs font-semibold px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+            6 Entries
+          </span>
+        </div>
+
+        <label class="block text-xs font-medium text-slate-400 mb-1.5">Load Preset Wheel</label>
+        <select id="presetSelect" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500">
+          <option value="prizes">🏆 Prizes & Rewards</option>
+          <option value="decision">🤔 Yes, No, Maybe</option>
+          <option value="food">🍕 What to Eat</option>
+          <option value="truthOrDare">🔥 Truth or Dare</option>
+          <option value="numbers">🔢 Lucky 1 to 10</option>
+        </select>
+      </div>
+
+      <!-- Add New Entry Input -->
+      <div>
+        <label class="block text-xs font-medium text-slate-400 mb-1.5">Add New Choice</label>
+        <form id="addEntryForm" class="flex gap-2">
+          <input 
+            type="text" 
+            id="entryInput" 
+            placeholder="Type entry title or emoji..." 
+            maxlength="40"
+            class="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+          >
+          <button type="submit" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-sm rounded-lg active:scale-95 transition flex items-center gap-1 shadow-md shadow-indigo-600/30">
+            <span>Add</span>
+          </button>
+        </form>
+      </div>
+
+      <!-- Management Toolbar -->
+      <div class="flex items-center justify-between pt-1 border-t border-slate-800">
+        <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Entries List</span>
+        <div class="flex gap-2">
+          <button id="shuffleBtn" class="text-xs px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-md transition flex items-center gap-1">
+            🔀 Shuffle
+          </button>
+          <button id="clearAllBtn" class="text-xs px-2.5 py-1.5 bg-slate-800 hover:bg-rose-950/60 text-slate-400 hover:text-rose-400 rounded-md transition flex items-center gap-1">
+            🗑️ Clear
+          </button>
+        </div>
+      </div>
+
+      <!-- Entries Item List -->
+      <div id="entriesList" class="flex flex-col gap-2 max-h-[310px] overflow-y-auto pr-1">
+        <!-- Injected via JavaScript -->
+      </div>
+    </aside>
+  </main>
+
+  <!-- Winner Modal -->
+  <div id="winnerModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm opacity-0 pointer-events-none transition-all duration-300">
+    <div class="bg-gradient-to-b from-slate-900 to-slate-950 border border-indigo-500/40 rounded-2xl p-6 sm:p-8 max-w-sm w-full shadow-2xl text-center transform scale-90 transition-all duration-300" id="modalCard">
+      <div class="w-16 h-16 mx-auto mb-4 bg-gradient-to-tr from-amber-400 to-pink-500 rounded-full flex items-center justify-center text-3xl shadow-lg shadow-pink-500/30">
+        🎉
+      </div>
+
+      <span class="text-xs font-extrabold uppercase tracking-widest text-indigo-400">We Have a Winner!</span>
+      <h3 id="winnerName" class="text-2xl sm:text-3xl font-display font-extrabold text-white mt-1 mb-6 break-words">
+        <!-- Winner text injected here -->
+      </h3>
+
+      <div class="flex flex-col gap-2.5">
+        <button id="spinAgainBtn" class="w-full py-3 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-sm uppercase tracking-wider transition active:scale-95 shadow-md shadow-indigo-600/30">
+          Spin Again
+        </button>
+        <button id="removeWinnerBtn" class="w-full py-2.5 px-4 rounded-xl bg-slate-800 hover:bg-rose-900/40 text-slate-300 hover:text-rose-300 font-medium text-xs border border-slate-700/80 transition active:scale-95">
+          Remove This Entry
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Notification Toast Box -->
+  <div id="toast" class="fixed bottom-5 right-5 z-40 bg-slate-800 border border-slate-700 text-slate-100 px-4 py-2.5 rounded-xl shadow-2xl text-xs font-medium transform translate-y-16 opacity-0 transition-all duration-300 pointer-events-none flex items-center gap-2">
+    <span id="toastMessage">Action completed!</span>
+  </div>
+
+  <!-- Audio & Game Engine Script -->
+  <script>
+    /* --- Modern Sound System via Web Audio API --- */
+    class SoundEngine {
+      constructor() {
+        this.ctx = null;
+        this.muted = false;
+      }
+
+      initContext() {
+        if (!this.ctx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          if (AudioContext) {
+            this.ctx = new AudioContext();
+          }
+        }
+        if (this.ctx && this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      }
+
+      playTick() {
+        if (this.muted) return;
+        this.initContext();
+        if (!this.ctx) return;
+
+        try {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(600, this.ctx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(140, this.ctx.currentTime + 0.04);
+
+          gain.gain.setValueAtTime(0.18, this.ctx.currentTime);
+          gain.gain.linearRampToValueAtTime(0.001, this.ctx.currentTime + 0.04);
+
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+
+          osc.start();
+          osc.stop(this.ctx.currentTime + 0.04);
+        } catch (e) {
+          console.warn("Audio error:", e);
+        }
+      }
+
+      playFanfare() {
+        if (this.muted) return;
+        this.initContext();
+        if (!this.ctx) return;
+
+        try {
+          // Play a delightful ascending chord arpeggio
+          const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+          notes.forEach((freq, idx) => {
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+
+            const startTime = this.ctx.currentTime + (idx * 0.1);
+            const duration = 0.35;
+
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(freq, startTime);
+
+            gain.gain.setValueAtTime(0, startTime);
+            gain.gain.linearRampToValueAtTime(0.2, startTime + 0.04);
+            gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
+
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+
+            osc.start(startTime);
+            osc.stop(startTime + duration);
+          });
+        } catch (e) {
+          console.warn("Audio error:", e);
+        }
+      }
+    }
+
+    const sounds = new SoundEngine();
+
+    /* --- Preset Definitions --- */
+    const PRESETS = {
+      prizes: [
+        { text: "Grand Prize 🎁", color: "#F43F5E" },
+        { text: "Gift Card 💳", color: "#EC4899" },
+        { text: "Free Coffee ☕", color: "#8B5CF6" },
+        { text: "Mystery Box 📦", color: "#3B82F6" },
+        { text: "High Five ✋", color: "#10B981" },
+        { text: "Extra Spin 🔄", color: "#F59E0B" }
+      ],
+      decision: [
+        { text: "Yes, definitely! 👍", color: "#10B981" },
+        { text: "No way 🙅", color: "#EF4444" },
+        { text: "Ask again later ⏳", color: "#F59E0B" },
+        { text: "Maybe 🤔", color: "#6366F1" }
+      ],
+      food: [
+        { text: "Pizza 🍕", color: "#EF4444" },
+        { text: "Burgers 🍔", color: "#F59E0B" },
+        { text: "Sushi 🍣", color: "#EC4899" },
+        { text: "Tacos 🌮", color: "#8B5CF6" },
+        { text: "Salad 🥗", color: "#10B981" },
+        { text: "Pasta 🍝", color: "#3B82F6" }
+      ],
+      truthOrDare: [
+        { text: "Truth 🗣️", color: "#3B82F6" },
+        { text: "Dare 🔥", color: "#EF4444" },
+        { text: "Double Dare ⚡", color: "#F59E0B" },
+        { text: "Pass Free 🎟️", color: "#10B981" }
+      ],
+      numbers: [
+        { text: "1", color: "#EF4444" },
+        { text: "2", color: "#F97316" },
+        { text: "3", color: "#F59E0B" },
+        { text: "4", color: "#84CC16" },
+        { text: "5", color: "#10B981" },
+        { text: "6", color: "#06B6D4" },
+        { text: "7", color: "#3B82F6" },
+        { text: "8", color: "#6366F1" },
+        { text: "9", color: "#8B5CF6" },
+        { text: "10", color: "#EC4899" }
+      ]
+    };
+
+    const VIBRANT_PALETTE = [
+      "#F43F5E", "#EC4899", "#8B5CF6", "#6366F1", "#3B82F6",
+      "#0EA5E9", "#06B6D4", "#14B8A6", "#10B981", "#84CC16",
+      "#EAB308", "#F97316"
+    ];
+
+    /* --- Application State --- */
+    let entries = JSON.parse(JSON.stringify(PRESETS.prizes));
+    let currentRotation = 0; // In radians
+    let isSpinning = false;
+    let angularVelocity = 0;
+    let friction = 0.985;
+    let lastSegmentIndex = -1;
+    let winnerIndex = null;
+
+    /* --- DOM Elements --- */
+    const canvas = document.getElementById('wheelCanvas');
+    const ctx = canvas.getContext('2d');
+    const spinBtn = document.getElementById('spinBtn');
+    const entriesList = document.getElementById('entriesList');
+    const entriesCountBadge = document.getElementById('entriesCountBadge');
+    const presetSelect = document.getElementById('presetSelect');
+    const addEntryForm = document.getElementById('addEntryForm');
+    const entryInput = document.getElementById('entryInput');
+    const shuffleBtn = document.getElementById('shuffleBtn');
+    const clearAllBtn = document.getElementById('clearAllBtn');
+    const soundToggleBtn = document.getElementById('soundToggleBtn');
+    const soundIcon = document.getElementById('soundIcon');
+    const soundLabel = document.getElementById('soundLabel');
+    const winnerModal = document.getElementById('winnerModal');
+    const modalCard = document.getElementById('modalCard');
+    const winnerName = document.getElementById('winnerName');
+    const spinAgainBtn = document.getElementById('spinAgainBtn');
+    const removeWinnerBtn = document.getElementById('removeWinnerBtn');
+    const toast = document.getElementById('toast');
+    const toastMessage = document.getElementById('toastMessage');
+
+    /* --- Toast Notification Helper --- */
+    let toastTimeout = null;
+    function showToast(msg) {
+      clearTimeout(toastTimeout);
+      toastMessage.textContent = msg;
+      toast.classList.remove('opacity-0', 'translate-y-16', 'pointer-events-none');
+      toast.classList.add('opacity-100', 'translate-y-0');
+
+      toastTimeout = setTimeout(() => {
+        toast.classList.remove('opacity-100', 'translate-y-0');
+        toast.classList.add('opacity-0', 'translate-y-16', 'pointer-events-none');
+      }, 2200);
+    }
+
+    /* --- Drawing the Wheel --- */
+    function drawWheel() {
+      const width = canvas.width;
+      const height = canvas.height;
+      const center = width / 2;
+      const radius = center - 24;
+
+      ctx.clearRect(0, 0, width, height);
+
+      const numSlices = entries.length;
+      if (numSlices === 0) {
+        // Draw empty fallback wheel
+        ctx.beginPath();
+        ctx.arc(center, center, radius, 0, 2 * Math.PI);
+        ctx.fillStyle = '#1e293b';
+        ctx.fill();
+        ctx.strokeStyle = '#334155';
+        ctx.lineWidth = 10;
+        ctx.stroke();
+
+        ctx.fillStyle = '#64748b';
+        ctx.font = '600 32px Inter, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('Please add at least 1 entry', center, center);
+        return;
+      }
+
+      const sliceAngle = (2 * Math.PI) / numSlices;
+
+      // Outer Decorative Rim
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(center, center, radius + 10, 0, 2 * Math.PI);
+      ctx.fillStyle = '#0f172a';
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.6)';
+      ctx.shadowBlur = 25;
+      ctx.fill();
+      ctx.restore();
+
+      // Draw Segments
+      for (let i = 0; i < numSlices; i++) {
+        const angle = currentRotation + i * sliceAngle;
+
+        ctx.beginPath();
+        ctx.moveTo(center, center);
+        ctx.arc(center, center, radius, angle, angle + sliceAngle);
+        ctx.closePath();
+
+        ctx.fillStyle = entries[i].color || VIBRANT_PALETTE[i % VIBRANT_PALETTE.length];
+        ctx.fill();
+
+        ctx.strokeStyle = '#0f172a';
+        ctx.lineWidth = 4;
+        ctx.stroke();
+
+        // Slice Text Rendering
+        ctx.save();
+        ctx.translate(center, center);
+        ctx.rotate(angle + sliceAngle / 2);
+
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = '#FFFFFF';
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
+        ctx.shadowBlur = 4;
+
+        // Auto-scale font size depending on number of items
+        const fontSize = Math.max(16, Math.min(32, Math.floor(400 / numSlices + 14)));
+        ctx.font = `bold ${fontSize}px Outfit, Inter, sans-serif`;
+
+        // Truncate text if excessively long
+        let text = entries[i].text;
+        if (text.length > 20) text = text.substring(0, 18) + '…';
+
+        ctx.fillText(text, radius - 35, 0);
+        ctx.restore();
+      }
+
+      // Outer Ring Accent Border
+      ctx.beginPath();
+      ctx.arc(center, center, radius, 0, 2 * Math.PI);
+      ctx.lineWidth = 8;
+      ctx.strokeStyle = '#1e293b';
+      ctx.stroke();
+
+      // Outer Edge Golden Pegs
+      for (let i = 0; i < numSlices; i++) {
+        const pegAngle = currentRotation + i * sliceAngle;
+        const px = center + (radius - 2) * Math.cos(pegAngle);
+        const py = center + (radius - 2) * Math.sin(pegAngle);
+
+        ctx.beginPath();
+        ctx.arc(px, py, 6, 0, 2 * Math.PI);
+        ctx.fillStyle = '#F8FAFC';
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+        ctx.shadowBlur = 5;
+        ctx.fill();
+      }
+
+      // Center Hub with 3D Bevel effect
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(center, center, 56, 0, 2 * Math.PI);
+      ctx.fillStyle = '#0f172a';
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.6)';
+      ctx.shadowBlur = 12;
+      ctx.fill();
+      ctx.restore();
+
+      ctx.beginPath();
+      ctx.arc(center, center, 44, 0, 2 * Math.PI);
+      const gradient = ctx.createLinearGradient(center - 40, center - 40, center + 40, center + 40);
+      gradient.addColorStop(0, '#6366f1');
+      gradient.addColorStop(1, '#ec4899');
+      ctx.fillStyle = gradient;
+      ctx.fill();
+
+      // Center Wheel Icon
+      ctx.fillStyle = '#FFFFFF';
+      ctx.font = 'bold 24px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('SPIN', center, center);
+    }
+
+    /* --- Spin Physics & Loop --- */
+    function getPointerSegmentIndex() {
+      if (entries.length === 0) return -1;
+      const numSlices = entries.length;
+      const sliceAngle = (2 * Math.PI) / numSlices;
+
+      // Pointer rests at top (3 * PI / 2 radians or -PI/2)
+      const pointerAngle = (3 * Math.PI) / 2;
+
+      // Normalize normalized angle offset
+      let normalized = (pointerAngle - currentRotation) % (2 * Math.PI);
+      if (normalized < 0) normalized += 2 * Math.PI;
+
+      return Math.floor(normalized / sliceAngle) % numSlices;
+    }
+
+    function triggerSpin() {
+      if (isSpinning || entries.length < 2) {
+        if (entries.length < 2) {
+          showToast("Please add at least 2 entries to spin!");
+        }
+        return;
+      }
+
+      sounds.initContext();
+      isSpinning = true;
+      spinBtn.disabled = true;
+
+      // Initial angular velocity: 0.35 to 0.55 rad/frame + random boost
+      angularVelocity = 0.38 + Math.random() * 0.22;
+      friction = 0.987 + Math.random() * 0.005; // dynamic deceleration
+      lastSegmentIndex = getPointerSegmentIndex();
+
+      requestAnimationFrame(animationLoop);
+    }
+
+    function animationLoop() {
+      if (!isSpinning) return;
+
+      currentRotation += angularVelocity;
+      currentRotation %= (2 * Math.PI);
+
+      // Check current segment passing top pointer to trigger click sound
+      const currentSegment = getPointerSegmentIndex();
+      if (currentSegment !== lastSegmentIndex) {
+        sounds.playTick();
+        lastSegmentIndex = currentSegment;
+      }
+
+      // Apply friction
+      angularVelocity *= friction;
+
+      // Stop threshold
+      if (angularVelocity < 0.0018) {
+        angularVelocity = 0;
+        isSpinning = false;
+        spinBtn.disabled = false;
+        drawWheel();
+        handleSpinComplete(lastSegmentIndex);
+        return;
+      }
+
+      drawWheel();
+      requestAnimationFrame(animationLoop);
+    }
+
+    /* --- Post-Spin Celebration --- */
+    function handleSpinComplete(winningIdx) {
+      winnerIndex = winningIdx;
+      const winner = entries[winningIdx];
+      if (!winner) return;
+
+      sounds.playFanfare();
+
+      // Confetti burst
+      if (typeof confetti === 'function') {
+        confetti({
+          particleCount: 100,
+          spread: 70,
+          origin: { y: 0.6 }
+        });
+      }
+
+      // Show Winner Modal
+      winnerName.textContent = winner.text;
+      winnerModal.classList.remove('opacity-0', 'pointer-events-none');
+      winnerModal.classList.add('opacity-100');
+      modalCard.classList.remove('scale-90');
+      modalCard.classList.add('scale-100');
+    }
+
+    function closeModal() {
+      winnerModal.classList.remove('opacity-100');
+      winnerModal.classList.add('opacity-0', 'pointer-events-none');
+      modalCard.classList.remove('scale-100');
+      modalCard.classList.add('scale-90');
+    }
+
+    /* --- Entries Management --- */
+    function renderEntries() {
+      entriesList.innerHTML = '';
+      entriesCountBadge.textContent = `${entries.length} Entries`;
+
+      entries.forEach((item, index) => {
+        const row = document.createElement('div');
+        row.className = "flex items-center justify-between gap-2 p-2 rounded-lg bg-slate-800/80 border border-slate-700/60 hover:border-slate-600 transition group";
+
+        row.innerHTML = `
+          <div class="flex items-center gap-2.5 min-w-0 flex-1">
+            <input type="color" data-index="${index}" value="${item.color}" class="color-picker w-6 h-6 rounded border-0 cursor-pointer bg-transparent">
+            <input type="text" data-index="${index}" value="${item.text.replace(/"/g, '&quot;')}" class="entry-edit-input flex-1 bg-transparent text-sm text-slate-100 focus:outline-none focus:border-b focus:border-indigo-500 font-medium truncate">
+          </div>
+          <button data-index="${index}" class="delete-btn text-slate-400 hover:text-rose-400 p-1 rounded transition opacity-80 group-hover:opacity-100" title="Delete entry">
+            <svg class="w-4 h-4 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+            </svg>
+          </button>
+        `;
+
+        entriesList.appendChild(row);
+      });
+
+      drawWheel();
+    }
+
+    /* --- Event Listeners --- */
+    // Wheel Tap / Click
+    canvas.addEventListener('click', () => {
+      triggerSpin();
+    });
+
+    // Spin Button Click
+    spinBtn.addEventListener('click', () => {
+      triggerSpin();
+    });
+
+    // Add Entry Form Submit
+    addEntryForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const val = entryInput.value.trim();
+      if (!val) return;
+
+      const randomColor = VIBRANT_PALETTE[entries.length % VIBRANT_PALETTE.length];
+      entries.push({ text: val, color: randomColor });
+      entryInput.value = '';
+
+      renderEntries();
+      showToast(`Added "${val}"`);
+    });
+
+    // Change Preset Wheel
+    presetSelect.addEventListener('change', (e) => {
+      const selected = PRESETS[e.target.value];
+      if (selected) {
+        entries = JSON.parse(JSON.stringify(selected));
+        renderEntries();
+        showToast("Preset loaded successfully!");
+      }
+    });
+
+    // Shuffle Entries
+    shuffleBtn.addEventListener('click', () => {
+      if (entries.length < 2) return;
+      for (let i = entries.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [entries[i], entries[j]] = [entries[j], entries[i]];
+      }
+      renderEntries();
+      showToast("Entries shuffled!");
+    });
+
+    // Clear All Entries
+    clearAllBtn.addEventListener('click', () => {
+      if (entries.length === 0) return;
+      entries = [];
+      renderEntries();
+      showToast("Cleared all entries.");
+    });
+
+    // Entries delegation: Delete & Inline Edit
+    entriesList.addEventListener('input', (e) => {
+      if (e.target.classList.contains('entry-edit-input')) {
+        const index = parseInt(e.target.dataset.index, 10);
+        entries[index].text = e.target.value;
+        drawWheel();
+      }
+      if (e.target.classList.contains('color-picker')) {
+        const index = parseInt(e.target.dataset.index, 10);
+        entries[index].color = e.target.value;
+        drawWheel();
+      }
+    });
+
+    entriesList.addEventListener('click', (e) => {
+      const deleteBtn = e.target.closest('.delete-btn');
+      if (deleteBtn) {
+        const index = parseInt(deleteBtn.dataset.index, 10);
+        const removed = entries.splice(index, 1);
+        renderEntries();
+        showToast(`Removed "${removed[0].text}"`);
+      }
+    });
+
+    // Sound Toggle
+    soundToggleBtn.addEventListener('click', () => {
+      sounds.muted = !sounds.muted;
+      if (sounds.muted) {
+        soundIcon.textContent = '🔇';
+        soundLabel.textContent = 'Muted';
+        soundToggleBtn.classList.add('text-slate-400');
+        showToast("Sound muted");
+      } else {
+        sounds.initContext();
+        soundIcon.textContent = '🔊';
+        soundLabel.textContent = 'Sound ON';
+        soundToggleBtn.classList.remove('text-slate-400');
+        showToast("Sound enabled");
+      }
+    });
+
+    // Modal Actions
+    spinAgainBtn.addEventListener('click', () => {
+      closeModal();
+      setTimeout(triggerSpin, 300);
+    });
+
+    removeWinnerBtn.addEventListener('click', () => {
+      if (winnerIndex !== null && entries[winnerIndex]) {
+        const removed = entries.splice(winnerIndex, 1);
+        renderEntries();
+        closeModal();
+        showToast(`Removed "${removed[0].text}"`);
+      }
+    });
+
+    winnerModal.addEventListener('click', (e) => {
+      if (e.target === winnerModal) {
+        closeModal();
+      }
+    });
+
+    // Responsive Canvas Resizing support
+    function resizeCanvas() {
+      drawWheel();
+    }
+    window.addEventListener('resize', resizeCanvas);
+
+    // Initial Setup
+    window.onload = function() {
+      renderEntries();
+      drawWheel();
+    };
+  </script>
+</body>
+</html>
